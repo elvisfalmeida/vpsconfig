@@ -3,6 +3,9 @@
 # Atualiza o sistema
 apt update && apt upgrade -y
 
+# Altera o timezone
+timedatectl set-timezone America/Sao_Paulo
+
 # Solicita o hostname ao usuário
 read -p "Digite o novo hostname: " new_hostname
 
