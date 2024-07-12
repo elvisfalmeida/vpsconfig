@@ -15,16 +15,16 @@ apt update
 # Instala o Zabbix Proxy e o PostgreSQL
 apt install -y zabbix-proxy-pgsql postgresql postgresql-contrib
 
+# Obtém a versão do PostgreSQL instalada
+PG_VERSION=$(psql --version | awk '{print $3}' | cut -d '.' -f1,2)
+
 # Configura o PostgreSQL para aceitar conexões locais
-sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" /etc/postgresql/12/main/postgresql.conf
-echo "host all all 127.0.0.1/32 md5" >> /etc/postgresql/12/main/pg_hba.conf
-echo "host all all ::1/128 md5" >> /etc/postgresql/12/main/pg_hba.conf
+sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" /etc/postgresql/$PG_VERSION/main/postgresql.conf
+echo "host all all 127.0.0.1/32 md5" >> /etc/postgresql/$PG_VERSION/main/pg_hba.conf
+echo "host all all ::1/128 md5" >> /etc/postgresql/$PG_VERSION/main/pg_hba.conf
 
 # Reinicia o PostgreSQL para aplicar as mudanças
 systemctl restart postgresql
-
-# Muda para o diretório /root para evitar problemas de permissão
-cd /root
 
 # Cria o banco de dados e o usuário para o Zabbix
 sudo -u postgres createuser --pwprompt zabbix
