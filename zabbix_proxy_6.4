@@ -23,12 +23,15 @@ echo "host all all ::1/128 md5" >> /etc/postgresql/12/main/pg_hba.conf
 # Reinicia o PostgreSQL para aplicar as mudanças
 systemctl restart postgresql
 
+# Muda para o diretório /root para evitar problemas de permissão
+cd /root
+
 # Cria o banco de dados e o usuário para o Zabbix
 sudo -u postgres createuser --pwprompt zabbix
 sudo -u postgres createdb -O zabbix zabbix_proxy
 
 # Importa o esquema inicial do banco de dados
-cat /usr/share/zabbix-sql-scripts/postgresql/proxy.sql | sudo -u zabbix psql zabbix_proxy
+cat /usr/share/zabbix-sql-scripts/postgresql/proxy.sql | sudo -u postgres psql zabbix_proxy
 
 # Configura o Zabbix Proxy
 sed -i "s/^# DBPassword=.*/DBPassword=zabbix/" /etc/zabbix/zabbix_proxy.conf
