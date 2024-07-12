@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# Solicita o hostname e o nome/IP do servidor Zabbix
+read -p "Digite o hostname para o Zabbix Proxy: " HOSTNAME
+read -p "Digite o nome/IP do servidor Zabbix: " ZABBIX_SERVER
+
+# Atualiza o sistema
+apt update && apt upgrade -y
+
+# Instala o repositório Zabbix
+wget https://repo.zabbix.com/zabbix/6.4/ubuntu/pool/main/z/zabbix-release/zabbix-release_6.4-1+ubuntu24.04_all.deb
+dpkg -i zabbix-release_6.4-1+ubuntu24.04_all.deb
+apt update
+
+# Instala o Zabbix Proxy e o PostgreSQL
+apt install -y zabbix-proxy-pgsql postgresql postgresql-contrib
+
+# Configura o PostgreSQL para aceitar conexões locais
+sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" /etc/postgresql/12/main/postgresql.conf
+echo "host all all 127.0.0.1/32 md5" >> /etc/postgresql/12/main/pg_hba.conf
+echo "host all all ::1/128 md5" >> /etc/postgresql/12/main/pg_hba.conf
+
+# Reinicia o PostgreSQL para aplicar as mudanças
+systemctl restart postgresql
+
+# Cria o banco de dados e o usuário para o Zabbix
+sudo -u postgres createuser --pwprompt zabbix
+sudo -u postgres createdb -O zabbix zabbix_proxy
+
+# Importa o esquema inicial do banco de dados
+cat /usr/share/zabbix-sql-scripts/postgresql/proxy.sql | sudo -u zabbix psql zabbix_proxy
+
+# Configura o Zabbix Proxy
+sed -i "s/^# DBPassword=.*/DBPassword=zabbix/" /etc/zabbix/zabbix_proxy.conf
+sed -i "s/^# DBName=.*/DBName=zabbix_proxy/" /etc/zabbix/zabbix_proxy.conf
+sed -i "s/^Server=.*/Server=$ZABBIX_SERVER/" /etc/zabbix/zabbix_proxy.conf
+sed -i "s/^# Hostname=.*/Hostname=$HOSTNAME/" /etc/zabbix/zabbix_proxy.conf
+
+# Inicia o serviço Zabbix Proxy e configura para iniciar com o sistema
+systemctl restart zabbix-proxy
+systemctl enable zabbix-proxy
+
+echo "Instalação e configuração do Zabbix Proxy com PostgreSQL concluídas com sucesso!"
